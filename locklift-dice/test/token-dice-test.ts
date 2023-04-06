@@ -196,7 +196,7 @@ describe("Test Dice contract", async function () {
         // Find event Game(address player, uint8 bet, uint8 result,  uint128 prize); in transaction tree
         let gameEvent = tracing.traceTree?.findEventsForContract({
           contract: TokenDice,
-          name: "Game",
+          name: "Game"
         });
 
         if (gameEvent![0].result === gameEvent![0].bet) {

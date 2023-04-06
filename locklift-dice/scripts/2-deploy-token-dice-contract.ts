@@ -11,7 +11,7 @@ async function main() {
     await checkAccountBalanceIsAbove(diceOwnerWallet.address, new BigNumber(locklift.utils.toNano(4)));
 
     // Put there address of the token root the previous script.
-    const tokenRootAddress = '0:e56ffdc692d7fa68534bab03e62e13fc2fb7b2be8aff1da94fdbf580290eb952';
+    const tokenRootAddress = '0:13d2105fbd7fb7665eb7845703e507b192557a4048c8d27fa8ee08828db76cb0';
     await checkIsContractDeployed(new Address(tokenRootAddress), 'TokenRoot')
 
     // We will deploy TokenDice.tsol by the internal message from our EverWallet

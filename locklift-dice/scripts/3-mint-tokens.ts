@@ -13,7 +13,7 @@ async function main() {
   const mintTo = diceOwnerWallet.address;
 
   // Put there address of the token root the previous script.
-  const tokenRootAddress = '0:cb5f57378e82174ed95502b01df16235d8d94e974ce24a4dc8a10143f23c0c44';
+  const tokenRootAddress = '0:13d2105fbd7fb7665eb7845703e507b192557a4048c8d27fa8ee08828db76cb0';
 
   await checkIsContractDeployed(new Address(tokenRootAddress), 'TokenRootUpgradeable')
   const TokenRoot = locklift.factory.getDeployedContract('TokenRootUpgradeable', new Address(tokenRootAddress));

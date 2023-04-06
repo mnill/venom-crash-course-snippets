@@ -19,7 +19,8 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
-    "everscale-standalone-client": "^2.1.11",
-    "locklift": "^2.4.8"
+    "everscale-inpage-provider": "0.3.56",
+    "everscale-standalone-client": "^2.1.18",
+    "locklift": "^2.5.2"
   }
 }
