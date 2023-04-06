@@ -1,0 +1,14 @@
+{
+  "name": "basic",
+  "version": "1.0.0",
+  "dependencies": {
+    "everscale-crypto": "^0.1.1",
+    "everscale-inpage-provider": "^0.3.45",
+    "everscale-standalone-client": "^2.1.5"
+  },
+  "scripts": {
+    "build": "mkdir -p artifacts && everdev sol compile -o ./artifacts contracts/SimpleStorage.tsol",
+    "wrapjs": "everdev js wrap ./artifacts/SimpleStorage.abi.json",
+    "test": "npm run build && npm run wrapjs && node test.js"
+  }
+}

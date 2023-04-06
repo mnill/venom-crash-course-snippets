@@ -1,0 +1,105 @@
+pragma ever-solidity >= 0.62.0;
+
+library Errors {
+    uint16 constant NON_ZERO_PUBLIC_KEY                             = 1000;
+    uint16 constant ZERO_OWNER                                      = 1001;
+    uint16 constant NOT_OWNER                                       = 1002;
+    uint16 constant BET_VALUE_TOO_SMALL                             = 1003;
+    uint16 constant INSUFFICIENT_BALANCE                            = 1004;
+}
+
+contract Dice {
+    // We do not set AbiHeader pubkey; because our contract will not accept external messages at all.
+
+    address static owner_;
+    event Game(address player, uint8 bet, uint8 result,  uint128 prize);
+
+    constructor() public {
+        // Contract pub key is NOT set
+        require(tvm.pubkey() == 0, Errors.NON_ZERO_PUBLIC_KEY);
+
+        // Owner must be set
+        require(owner_.value != 0, Errors.ZERO_OWNER);
+
+        // Constructor called by the owner. This check is not necessary in this contract because our constructor
+        // has no params. As you remember address of the contract is hash(code + tvm.pubkey + static variables), so
+        // if you have address + static variables you can proof which one was set on deploy time. But constructor can
+        // be called by anyone and there you often need to check is constructor caller authorized contract.
+        // You will realize more about it in the next chapter "distributed programming
+        require(msg.sender == owner_, Errors.NOT_OWNER);
+    }
+
+    function maxBet() public view returns (uint128) {
+        // view method to call off-chain to get max bet
+        if (address(this).balance < 0.5 ever * 6)
+            return 0;
+        return address(this).balance / 5;
+    }
+
+    modifier checkOwner {
+        require(msg.sender == owner_, Errors.NOT_OWNER);
+        _;
+    }
+
+    function roll(uint8 _bet_dice_value) external {
+        // check incoming message has at least 0.5 VENOMs.
+        require(msg.value >= 0.5 ever, Errors.BET_VALUE_TOO_SMALL);
+
+        // check that our contract has enough balance to payout. address(this).balance already includes msg.value.
+        require(address(this).balance >= msg.value * 6, Errors.INSUFFICIENT_BALANCE);
+
+        // Shuffle rnd. This is toy random and teoretically can be manipulated by collator. Do not use it in serious
+        // production.
+        rnd.shuffle();
+
+        // get random result
+        uint8 dice_result_value = rnd.next(6);  // 0..5
+
+        // if player won
+        if (_bet_dice_value == dice_result_value) {
+
+            // tvm.rawReserve - it is like to send amount of VENOMs to your self
+            // there we first send to our self (address(this).balance - msg.value * 6)
+            tvm.rawReserve(address(this).balance - msg.value * 6, 2);
+
+            // Send an external message from the contract to no where. It is a log message to easily catch all wins off-chain
+            emit Game(msg.sender, _bet_dice_value, dice_result_value, msg.value * 6);
+
+            // Then we send all LEFT amount of value to the player. Read below why so.
+            msg.sender.transfer({value: 0, flag: 128, bounce: false});
+
+            // In ethereum we have separate entities - a balance of the smart contract and the user account balance
+            // which one has started current transaction and transaction fees are paid from the account balance.
+
+            // In our async system, we have another logic - We have a balance of the smart contract and the value in the
+            // incoming message. The value of the incoming message are added to the smart contract balance before
+            // the computation starts, but we can check it in the msg.value variable.
+
+            // If the smart contract does not call tvm.accept() method before the gas usage will exceed the msg.value
+            // the transaction will be aborted. But tvm.accept() is not necessary to successfully the finishing of the
+            // transaction started by the internal message if the message has enough value to pay the gas.
+
+            // One more confusing moment for the beginners - it doesn't matter how much msg.value has the internal
+            // message the transaction can send any amount of VENOMs to another account with the messages even if you
+            // do not call tvm.accept(). Without tvm.accept() transactions can not use more gas than they have in the
+            // msg.value but they can send any amount of VENOMs so you must control this by yourself. We will talk about
+            // this in the "Carefully working with the value" page of this chapter.
+
+            // So we have the incoming message with > 0.5 VENOMs and if the player wins we just reserve
+            // address(this).balance - msg.value * 6 on this smart contract and send all the left value
+            // after paying the gas fee of the transaction back to the winner. So we will send back to the winner
+            // (msg.value * 6 minus all the gas fees). Pretty straightforward in my opinion.
+        } else {
+            emit Game(msg.sender, _bet_dice_value, dice_result_value, 0);
+        }
+    }
+
+    function cashOut(address _to, uint128 _value) external checkOwner {
+        require(_to.value != 0);
+        _to.transfer({
+            value: _value,
+            flag: 0,
+            bounce: true
+        });
+    }
+}

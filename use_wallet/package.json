@@ -1,0 +1,14 @@
+{
+  "name": "basic",
+  "version": "1.0.0",
+  "dependencies": {
+    "bignumber.js": "^9.1.0",
+    "everscale-inpage-provider": "^0.3.45",
+    "everscale-standalone-client": "^2.1.5"
+  },
+  "scripts": {
+    "build": "mkdir -p artifacts && everdev sol compile -o ./artifacts contracts/Dice.tsol",
+    "wrapjs": "everdev js wrap ./artifacts/Dice.abi.json",
+    "test": "npm run build && npm run wrapjs && node test.js"
+  }
+}
