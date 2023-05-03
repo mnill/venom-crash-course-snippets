@@ -12,7 +12,7 @@ async function main() {
   await locklift.factory.accounts.storage.addAccount(diceOwnerWallet);
 
   console.log('diceOwnerWallet', diceOwnerWallet.address.toString());
-  const TokenRootAddress = new Address("0:13d2105fbd7fb7665eb7845703e507b192557a4048c8d27fa8ee08828db76cb0");
+  const TokenRootAddress = new Address("0:cb5f57378e82174ed95502b01df16235d8d94e974ce24a4dc8a10143f23c0c44");
 
   const { contract: anyOwner } = await locklift.factory.deployContract({
     contract: "AnyOwner",

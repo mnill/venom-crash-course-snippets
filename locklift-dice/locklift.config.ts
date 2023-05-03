@@ -1,16 +1,19 @@
 import { LockliftConfig } from "locklift";
 import { FactorySource } from "./build/factorySource";
-import { SimpleGiver, GiverWallet, GiverWalletV2_3 } from "./giverSettings";
 
 declare global {
   const locklift: import("locklift").Locklift<FactorySource>;
 }
 
 const LOCAL_NETWORK_ENDPOINT = process.env.NETWORK_ENDPOINT || "http://localhost/graphql";
+const DEV_NET_NETWORK_ENDPOINT = process.env.DEV_NET_NETWORK_ENDPOINT || "https://devnet-sandbox.evercloud.dev/graphql";
+
+const VENOM_TESTNET_ENDPOINT = process.env.VENOM_TESTNET_ENDPOINT || "https://jrpc-testnet.venom.foundation/rpc";
+const VENOM_TESTNET_TRACE_ENDPOINT =
+  process.env.VENOM_TESTNET_TRACE_ENDPOINT || "https://gql-testnet.venom.foundation/graphql";
 
 // Create your own link on https://dashboard.evercloud.dev/
-const DEV_NET_NETWORK_ENDPOINT = process.env.DEV_NET_NETWORK_ENDPOINT || "https://venom-testnet.evercloud.dev/XXX/graphql";
-const MAIN_NET_NETWORK_ENDPOINT = process.env.MAIN_NET_NETWORK_ENDPOINT || "https://venom.evercloud.dev/XXX/graphql";
+const MAIN_NET_NETWORK_ENDPOINT = process.env.MAIN_NET_NETWORK_ENDPOINT || "https://mainnet.evercloud.dev/XXX/graphql";
 
 const config: LockliftConfig = {
   compiler: {
@@ -18,9 +21,9 @@ const config: LockliftConfig = {
     // path: "/mnt/o/projects/broxus/TON-Solidity-Compiler/build/solc/solc",
 
     // Or specify version of compiler
-    version: "0.62.0",
+    version: "0.64.0",
 
-    // Specify config for extarnal contracts as in exapmple
+    // Specify config for external contracts as in example
     externalContracts: {
       "node_modules/broxus-ton-tokens-contracts/build": ['TokenRootUpgradeable', 'TokenWalletUpgradeable', 'TokenWalletPlatform']
     },
@@ -32,7 +35,7 @@ const config: LockliftConfig = {
     // path: "/mnt/o/projects/broxus/TVM-linker/target/release/tvm_linker",
 
     // Or specify version of linker
-    version: "0.15.48",
+    version: "0.20.2",
   },
   networks: {
     local: {
@@ -50,7 +53,6 @@ const config: LockliftConfig = {
       // This giver is default local-node giverV2
       giver: {
         // Check if you need provide custom giver
-        giverFactory: (ever, keyPair, address) => new SimpleGiver(ever, keyPair, address),
         address: "0:ece57bcc6c530283becbbd8a3b24d3c5987cdddc3c8b7b33be6e4a6312490415",
         key: "172af540e43a524763dd53b26a066d472a97c4de37d5498170564510608250c3",
       },
@@ -58,6 +60,7 @@ const config: LockliftConfig = {
         endpoint: LOCAL_NETWORK_ENDPOINT,
       },
       keys: {
+        // Use everdev to generate your phrase
         // !!! Never commit it in your repos !!!
         phrase: "action inject penalty envelope rabbit element slim tornado dinner pizza off blood",
         amount: 20,
@@ -75,16 +78,40 @@ const config: LockliftConfig = {
         },
       },
       giver: {
-        giverFactory: (ever, keyPair, address) => new SimpleGiver(ever, keyPair, address),
-        address: "0:ece57bcc6c530283becbbd8a3b24d3c5987cdddc3c8b7b33be6e4a6312490415",
-        key: "172af540e43a524763dd53b26a066d472a97c4de37d5498170564510608250c3"
+        address: "0:0000000000000000000000000000000000000000000000000000000000000000",
+        key: "secret key",
       },
       tracing: {
         endpoint: DEV_NET_NETWORK_ENDPOINT,
       },
       keys: {
+        // Use everdev to generate your phrase
         // !!! Never commit it in your repos !!!
-        phrase: "action inject penalty envelope rabbit element slim tornado dinner pizza off blood",
+        // phrase: "action inject penalty envelope rabbit element slim tornado dinner pizza off blood",
+        amount: 20,
+      },
+    },
+    venom_testnet: {
+      connection: {
+        id: 1000,
+        type: "jrpc",
+        group: "dev",
+        data: {
+          endpoint: VENOM_TESTNET_ENDPOINT,
+        },
+      },
+      giver: {
+        address: "0:0000000000000000000000000000000000000000000000000000000000000000",
+        phrase: "phrase",
+        accountId: 0,
+      },
+      tracing: {
+        endpoint: VENOM_TESTNET_TRACE_ENDPOINT,
+      },
+      keys: {
+        // Use everdev to generate your phrase
+        // !!! Never commit it in your repos !!!
+        // phrase: "action inject penalty envelope rabbit element slim tornado dinner pizza off blood",
         amount: 20,
       },
     },
@@ -102,16 +129,16 @@ const config: LockliftConfig = {
       },
       // This giver is default Wallet
       giver: {
-        giverFactory: (ever, keyPair, address) => new SimpleGiver(ever, keyPair, address),
-        address: "0:ece57bcc6c530283becbbd8a3b24d3c5987cdddc3c8b7b33be6e4a6312490415",
-        key: "172af540e43a524763dd53b26a066d472a97c4de37d5498170564510608250c3"
+        address: "0:0000000000000000000000000000000000000000000000000000000000000000",
+        key: "secret key",
       },
       tracing: {
         endpoint: MAIN_NET_NETWORK_ENDPOINT,
       },
       keys: {
+        // Use everdev to generate your phrase
         // !!! Never commit it in your repos !!!
-        phrase: "action inject penalty envelope rabbit element slim tornado dinner pizza off blood",
+        // phrase: "action inject penalty envelope rabbit element slim tornado dinner pizza off blood",
         amount: 20,
       },
     },

@@ -4,6 +4,7 @@ async function main() : Promise<any> {
   // Get keypair from the seed phrase
   const signer = (await locklift.keystore.getSigner("0"))!;
 
+  console.log(signer.publicKey)
   // Get the contract by the pubkey.
   const diceOwnerWallet = await EverWalletAccount.fromPubkey({publicKey: signer.publicKey, workchain: 0});
 

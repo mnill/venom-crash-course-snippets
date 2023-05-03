@@ -193,10 +193,11 @@ describe("Test Dice contract", async function () {
 
         let {value0: ownerTokenWalletBalanceAfterPlay} = await OwnerTokenWallet.methods.balance({answerId: 0}).call();
 
+
         // Find event Game(address player, uint8 bet, uint8 result,  uint128 prize); in transaction tree
         let gameEvent = tracing.traceTree?.findEventsForContract({
           contract: TokenDice,
-          name: "Game"
+          name: "Game" as const
         });
 
         if (gameEvent![0].result === gameEvent![0].bet) {
