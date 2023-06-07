@@ -1,0 +1,272 @@
+pragma ever-solidity >= 0.64.0;
+
+import "./TokenWallet.tsol";
+import "./interfaces/ITokenRoot.tsol";
+import "./libraries/Errors.tsol";
+import "./libraries/TokenGas.tsol";
+import "./libraries/TokenMsgFlag.tsol";
+
+
+contract TokenRoot is ITokenRoot {
+
+  // just token metadata
+  string static name_;
+  string static symbol_;
+
+  // decimals refers to how divisible a token can be, from 0 (not at all divisible) to 18 (pretty much continuous) and even higher if required.
+  // native ever has decimals = 9, so 1 ever = 1_000_000_000 nano evers.
+  // just google it if not familiar with token decimals.
+  uint8 static decimals_;
+
+  // owner of the root
+  address static rootOwner_;
+
+  // The code of the wallet contract is needed to deploy the wallet contract.
+  // In the tvm the code is also stored in the TvmCell and it can be sent via messages.
+  TvmCell static walletCode_;
+
+
+  // total minted amount
+  uint128 totalSupply_;
+
+
+  constructor(address remainingGasTo) public {
+
+    // Pubkey for this smart contract must be not set
+    require(tvm.pubkey() == 0, Errors.NON_ZERO_PUBLIC_KEY);
+
+    // Root owner must be set
+    require(rootOwner_.value != 0, Errors.OWNER_IS_NOT_SET);
+
+    // This constructor must be called from root owner
+    require(msg.sender == rootOwner_, Errors.NOT_OWNER);
+
+    // We reserve TokenGas.TARGET_ROOT_BALANCE amount of EVERs on this account.
+    // It is like send a message with value to your self.
+    tvm.rawReserve(TokenGas.TARGET_ROOT_BALANCE, 0);
+
+    if (remainingGasTo.value != 0) {
+      // transfer all value are left after reserve to the remainingGasTo
+      remainingGasTo.transfer({
+        value: 0,
+        flag: 128,
+        bounce: false
+      });
+    }
+  }
+
+  modifier onlyRootOwner() {
+    require(rootOwner_ == msg.sender, Errors.NOT_OWNER);
+    _;
+  }
+
+  function _buildWalletInitData(address walletOwner) internal view returns (TvmCell) {
+    // StateInit - the message deploying the contract where we establish the code the contract and its static variables.
+    // Essentially the hash(stateInit) is the contract address.
+    // The contract address depends on the code and the intial variables.
+    // So we can determine the contract address just by knowing its code
+    // and initial variables (not those that are sent in the constructor).
+
+    // Pay attention on what the wallet address depend on.
+    // He is depend on root_address(this), wallet code and the owner's address.
+    return tvm.buildStateInit({
+      contr: TokenWallet,  // Target contract, to guide compiler how to pack static variables
+      varInit: {
+        root_: address(this),
+        owner_: walletOwner
+      },
+      pubkey: 0,
+      code: walletCode_
+    });
+  }
+
+  function _deployWallet(
+    TvmCell stateInit,
+    uint128 deployWalletValue
+  ) private pure returns (address) {
+    // Here we create one message that will deploy the contract
+    // (if the contract is already deployed , nothing will happen)
+    // also this message will call that the constructor
+    // () without arguments .
+    address wallet = new TokenWallet {
+        stateInit: stateInit,
+        value: deployWalletValue, // the amount of native coins we are sending with the message
+        wid: address(this).wid, // the same workchain id
+        // this flag denotes that we are paying for the creation of the message from the contract balance separately
+        // not from the value we sending
+        flag: TokenMsgFlag.SENDER_PAYS_FEES
+    }();
+
+    return wallet;
+  }
+
+  function deployWallet(
+    address walletOwner,
+    uint128 deployWalletValue
+  ) override public responsible returns (address tokenWallet)
+  {
+    // This is public function. Anyone can call it to deploy a token wallet for any owner
+    // Also this function marked as responsible
+    // so it will send back address of the deployed token wallet
+
+    require(walletOwner.value != 0, Errors.WRONG_WALLET_OWNER);
+
+    // We always reserve some amount of tokens on the account balance to keep it
+    tvm.rawReserve(TokenGas.TARGET_ROOT_BALANCE, 0);
+
+    // Calculate the wallet initial data (code + static variables)
+    TvmCell stateInit = _buildWalletInitData(walletOwner);
+
+    // Deploy the wallet and get their address
+    tokenWallet = _deployWallet(stateInit, deployWalletValue);
+
+    // This function marked as responsible
+    // Responsible is the special sugar for async calls which one waiting for the answer.
+    // When someone calls responsible he must specify callback -
+    // a function of the sender contract with the same arguments as
+    // the responsible function returns.
+    // solidity adds a hidden variable in the responsible function signature - uint32 answerId
+    // AnswerID is not a unique id of the call, this is just a functionID that one must
+    // Be called in the back message with variables this function return.
+
+    // Look at ThirdParty.tsol for example how to call responsible function from the another smart contract
+
+    // So the line below will be compiled to something like (pseudocode)
+    // msg.sender.call({ value: 0,
+    //	flag: TokenMsgFlag.ALL_NOT_RESERVED,
+    //	bounce: false,
+    //	functionToCall: asnwerID,
+    //	values: tokenWallet
+    // })
+    return { value: 0, flag: TokenMsgFlag.ALL_NOT_RESERVED, bounce: false } tokenWallet;
+
+    // So we have three action in this function:
+    // 1. tvm.rawReserve(TokenGas.TARGET_ROOT_BALANCE, 0);
+    // 2. sending an internal message to deploy a new wallet
+    // 3. sending an internal message to the answer for responsible with the address of deployed wallet
+  }
+
+  // Minting new tokens
+  function mint(
+      uint128 amount,
+      address recipient,
+      uint128 deployWalletValue,
+      address remainingGasTo,
+      bool notify,
+      TvmCell payload
+  ) override external onlyRootOwner {
+    // Notify is a special flag - is the wallet must send a notify message to the contract owner
+    // with information that he is accepted new tokens from the root
+    // Payload - any data to send to the wallet owner with the notification method
+
+    // Notify and Payload are necessary to build big decentralised applications in the
+    // async blockchain. We will figure out how to use payload in the
+    // "Build a decentralized application" page of this chapter
+
+    require(amount > 0, Errors.WRONG_AMOUNT);
+    require(recipient.value != 0, Errors.WRONG_RECIPIENT);
+
+    // We always reserve some amount of tokens on the account balance to keep it
+    tvm.rawReserve(TokenGas.TARGET_ROOT_BALANCE, 0);
+
+    TvmCell stateInit = _buildWalletInitData(recipient);
+
+    // Be aware, address recipient - is not an address of target wallet contract
+    // recipient is the address of the wallet owner!
+    // The same logic also in EverWallet extension.
+    // When you send tokens to someone to specify the wallet owner address,
+    // wallet address calculate under the hood.
+
+    address recipientWallet;
+
+    if(deployWalletValue > 0) {
+      // We need to deploy wallet first
+      recipientWallet = _deployWallet(stateInit, deployWalletValue);
+    } else {
+      // Wallet is already deployed. Just calculate the address.
+      // Address of the wallet for some owner is always the same
+      recipientWallet = address(tvm.hash(stateInit));
+    }
+
+    totalSupply_ += amount;
+
+    // There we set bounce: true
+    // So if any error occurs in the transaction invoked by this message
+    // Special bounce message will be created and we will handle it
+    // in the onBounce function of this smart contract
+    TokenWallet(recipientWallet).acceptMint{ value: 0, flag: TokenMsgFlag.ALL_NOT_RESERVED, bounce: true } (
+      amount,
+      remainingGasTo,
+      notify,
+      payload
+    );
+  }
+
+  function _getExpectedWalletAddress(address walletOwner) internal view returns (address) {
+    return address(tvm.hash(_buildWalletInitData(walletOwner)));
+  }
+
+  function rootOwner()
+    override
+    external
+    view
+    responsible
+    returns (address)
+  {
+    // Responsible function to get rootOwner_ from another contract.
+    return { value: 0, flag: TokenMsgFlag.REMAINING_GAS, bounce: false } rootOwner_;
+  }
+
+  function walletOf(address walletOwner)
+    override
+    public
+    view
+    responsible
+    returns (address)
+  {
+    // Responsible function to derive wallet address from owner
+    require(walletOwner.value != 0, Errors.WRONG_WALLET_OWNER);
+    return { value: 0, flag: TokenMsgFlag.REMAINING_GAS, bounce: false } _getExpectedWalletAddress(walletOwner);
+  }
+
+  onBounce(TvmSlice slice) external {
+    // This is a utility function for handling errors. In the mint function we did not check
+    // if the contract was deployed at the destination address.
+
+    // If the internal message have bounce: true and an exception occurs
+    // or the destination contract does not exist,
+    // then automatically (if there is enough money  attached to the message)
+    // a return message is sent with a call to the onBounce function.
+
+    // This onBounce message has TvmSlice slice - which one contain functionID
+    // and arguments was attached to the original message.
+
+    // Now there is a stupid limitation and arguments are cutting after the first 224 bites
+    // But this will be fixed soon.
+
+
+    // We use this function to show you how to handle a situation
+    // when tokens are minted to a non-existing address and to subtract from the total_supply
+    // as the tokens were not printed.
+
+    // This function cannot just be called, the message must have a special bounced: true flag,
+    // which cannot be added manually when sending. There is no need to do additional checks that we actually sent
+    // the message. So bad actor can not subtract from the total supply by sending unexpected bounced message.
+
+    // But there is still some attack vectors on onBounce
+    // which one will we cover in the "The danger of the responsible" page of this chapter.
+
+    // decode functionID - what function we tried to call.
+    // Under the hood functionID is first 32 bits of SHA256(functionName + functionArguments)
+    // with first bit set to 0 for internal messages.
+
+    uint32 functionId = slice.decode(uint32);
+    if (functionId == tvm.functionId(TokenWallet.acceptMint)) {
+        // decode amount of tokens we tried to mint
+        uint128 latest_bounced_tokens = slice.decode(uint128);
+        // decrease the total supply because mint was failed.
+        totalSupply_ -= latest_bounced_tokens;
+    }
+  }
+}
+

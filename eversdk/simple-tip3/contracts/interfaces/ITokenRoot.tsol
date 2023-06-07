@@ -1,0 +1,21 @@
+pragma ever-solidity >= 0.64.0;
+
+interface ITokenRoot {
+
+    function deployWallet(
+        address walletOwner,
+        uint128 deployWalletValue
+    ) external responsible returns (address);
+
+    function mint(
+        uint128 amount,
+        address recipient,
+        uint128 deployWalletValue,
+        address remainingGasTo,
+        bool notify,
+        TvmCell payload
+    ) external;
+
+    function rootOwner() external view responsible returns (address);
+    function walletOf(address owner) external view responsible returns (address);
+}
