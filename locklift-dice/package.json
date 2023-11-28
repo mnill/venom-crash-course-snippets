@@ -11,14 +11,16 @@
     "@types/chai": "^4.3.5",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.16.3",
-    "chai": "^4.3.7",
-    "broxus-ton-tokens-contracts": "github:broxus/tip3#480c1b4481d1dddb028b408b20ba8c19abd1a4a4",
     "bignumber.js": "^9.1.0",
-    "everscale-standalone-client": "^2.1.18",
-    "everscale-inpage-provider": "0.3.56",
-    "locklift": "^2.5.2",
+    "chai": "^4.3.7",
+    "locklift": "^2.9.2",
     "prettier": "^2.8.8",
     "ts-mocha": "^10.0.0",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "everscale-inpage-provider": "^0.3.63",
+    "everscale-standalone-client": "^2.1.23"
+  },
+  "dependencies": {
+    "@broxus/tip3": "1.0.2"
   }
 }

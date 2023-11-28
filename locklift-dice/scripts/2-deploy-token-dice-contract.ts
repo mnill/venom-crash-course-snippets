@@ -6,7 +6,6 @@ import BigNumber from "bignumber.js";
 async function main() {
     const signer = (await locklift.keystore.getSigner("0"))!;
     // The same EverWallet we deployed in script 0, because they are from one pubkey
-    console.log(signer.publicKey)
     const diceOwnerWallet = await EverWalletAccount.fromPubkey({publicKey: signer.publicKey, workchain: 0});
 
     console.log(diceOwnerWallet.address)

@@ -1,6 +1,6 @@
 pragma ever-solidity >= 0.64.0;
 
-import "broxus-ton-tokens-contracts/contracts/interfaces/ITokenRoot.tsol";
+import "@broxus/tip3/contracts/interfaces/ITokenRoot.tsol";
 import "./libraries/TokenMsgFlag.tsol";
 
 // Just a simple proxy contract to allow anyone to mint the tokens

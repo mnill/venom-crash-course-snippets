@@ -1,9 +1,9 @@
 pragma ever-solidity >= 0.64.0;
 
-import "broxus-ton-tokens-contracts/contracts/interfaces/ITokenRoot.tsol";
-import "broxus-ton-tokens-contracts/contracts/interfaces/ITokenWallet.tsol";
-import "broxus-ton-tokens-contracts/contracts/interfaces/IAcceptTokensTransferCallback.tsol";
-import "broxus-ton-tokens-contracts/contracts/interfaces/IAcceptTokensMintCallback.tsol";
+import "@broxus/tip3/contracts/interfaces/ITokenRoot.tsol";
+import "@broxus/tip3/contracts/interfaces/ITokenWallet.tsol";
+import "@broxus/tip3/contracts/interfaces/IAcceptTokensTransferCallback.tsol";
+import "@broxus/tip3/contracts/interfaces/IAcceptTokensMintCallback.tsol";
 import "./libraries/TokenMsgFlag.tsol";
 
 library DiceErrors {
